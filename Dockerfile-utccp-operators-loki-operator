@@ -1,0 +1,39 @@
+ARG arch
+FROM 10.30.38.116/utccp-$arch/dependence-golang-builder:latest AS builder
+
+ENV CGO_ENABLED=0
+ENV GOOS=linux
+ENV GOFLAGS="-p=4"
+
+ENV BUILD_VERSION=v5.6.9
+ENV OS_GIT_MAJOR=5
+ENV OS_GIT_MINOR=6
+ENV OS_GIT_PATCH=9
+ENV SOURCE_GIT_COMMIT=8ec44b11266c1d7710cfcf5bdb86f397753740e2
+ENV SOURCE_GIT_URL=https://github.com/openshift/loki
+
+ADD app /tmp/src/app
+WORKDIR /tmp/src/app/operator
+
+RUN  go env -w GO111MODULE=on && \
+     go env -w GOPROXY=https://goproxy.io,direct && \
+     go build -a -o ./manager main.go
+
+#@follow_tag(registry.redhat.io/ubi8:latest)
+FROM 10.30.38.116/utccp-$arch/dependence-uos20:latest
+COPY --from=builder /tmp/src/app/operator/manager /manager
+
+ENTRYPOINT ["/manager"]
+
+LABEL io.k8s.display-name="UCCPS Loki Operator" \
+      io.k8s.description="UCCPS Loki Operator to manage LokiStack installs for UCCPS Logging." \
+      io.openshift.tags="uccps,logging,loki,loki-operator" \
+      maintainer="sunyuxuan@uniontech.com" \
+      name="uccps-logging/loki-operator" \
+      com.uos.component="loki-operator-container" \
+      io.openshift.maintainer.product="UCCPS" \
+      io.openshift.maintainer.component="Logging" \
+      io.openshift.build.commit.id=8ec44b11266c1d7710cfcf5bdb86f397753740e2 \
+      io.openshift.build.source-location=https://github.com/openshift/loki \
+      io.openshift.build.commit.url=https://github.com/openshift/loki/commit/8ec44b11266c1d7710cfcf5bdb86f397753740e2 \
+      version=v5.6.9

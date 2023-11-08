@@ -1,1 +1,1 @@
-# utccp-image-loki-operator-
+# utccp-image-loki-operator
